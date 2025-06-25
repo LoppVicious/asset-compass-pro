@@ -4,7 +4,6 @@ import {
   Briefcase, 
   TrendingUp, 
   Settings,
-  Menu
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -44,7 +43,7 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -55,10 +54,12 @@ export function AppSidebar() {
     return currentPath.startsWith(path);
   };
 
+  const isCollapsed = state === "collapsed";
+
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
+    <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
       <div className="flex items-center justify-between p-4 border-b">
-        {!collapsed && (
+        {!isCollapsed && (
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
               <Briefcase className="h-5 w-5 text-white" />
@@ -91,7 +92,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

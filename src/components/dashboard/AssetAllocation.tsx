@@ -46,11 +46,10 @@ export function AssetAllocation() {
               <Legend 
                 verticalAlign="bottom" 
                 height={36}
-                formatter={(value, entry) => (
-                  <span style={{ color: entry.color }}>
-                    {value} ({entry.payload?.percentage}%)
-                  </span>
-                )}
+                formatter={(value) => {
+                  const item = sampleData.find(data => data.name === value);
+                  return item ? `${value} (${item.percentage}%)` : value;
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
