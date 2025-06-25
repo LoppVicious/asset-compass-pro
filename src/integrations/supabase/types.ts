@@ -9,7 +9,183 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      historical_prices: {
+        Row: {
+          fecha: string
+          precio_cierre: number
+          simbolo: string
+        }
+        Insert: {
+          fecha: string
+          precio_cierre: number
+          simbolo: string
+        }
+        Update: {
+          fecha?: string
+          precio_cierre?: number
+          simbolo?: string
+        }
+        Relationships: []
+      }
+      operations: {
+        Row: {
+          cantidad: number
+          fecha: string
+          id: string
+          portfolio_id: string
+          precio: number
+          simbolo: string
+          tipo: string
+        }
+        Insert: {
+          cantidad: number
+          fecha?: string
+          id?: string
+          portfolio_id: string
+          precio: number
+          simbolo: string
+          tipo: string
+        }
+        Update: {
+          cantidad?: number
+          fecha?: string
+          id?: string
+          portfolio_id?: string
+          precio?: number
+          simbolo?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operations_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolios: {
+        Row: {
+          fecha_creacion: string
+          id: string
+          nombre: string
+          user_id: string
+        }
+        Insert: {
+          fecha_creacion?: string
+          id?: string
+          nombre: string
+          user_id: string
+        }
+        Update: {
+          fecha_creacion?: string
+          id?: string
+          nombre?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolios_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      positions: {
+        Row: {
+          cantidad: number
+          fecha_compra: string
+          id: string
+          portfolio_id: string
+          precio_compra: number
+          simbolo: string
+          tipo_activo: string
+        }
+        Insert: {
+          cantidad: number
+          fecha_compra: string
+          id?: string
+          portfolio_id: string
+          precio_compra: number
+          simbolo: string
+          tipo_activo: string
+        }
+        Update: {
+          cantidad?: number
+          fecha_compra?: string
+          id?: string
+          portfolio_id?: string
+          precio_compra?: number
+          simbolo?: string
+          tipo_activo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positions_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          idioma: string
+          moneda_base: string
+          name: string
+          zona_horaria: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          idioma: string
+          moneda_base: string
+          name: string
+          zona_horaria: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          idioma?: string
+          moneda_base?: string
+          name?: string
+          zona_horaria?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
