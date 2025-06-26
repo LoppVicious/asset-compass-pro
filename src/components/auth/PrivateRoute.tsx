@@ -11,6 +11,7 @@ interface PrivateRouteProps {
 export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
 
+  // Show loading spinner while checking authentication status
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -19,7 +20,8 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
+  // Only redirect to login if we're not loading and there's no user
+  if (!isLoading && !user) {
     return <Navigate to="/login" replace />;
   }
 
