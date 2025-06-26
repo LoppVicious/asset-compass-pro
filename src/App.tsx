@@ -13,7 +13,6 @@ import Dashboard from "./pages/Dashboard";
 import Portfolios from "./pages/Portfolios";
 import Operations from "./pages/Operations";
 import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -25,9 +24,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Ruta pública: landing con preview */}
             <Route path="/" element={<LandingPage />} />
+            
+            {/* Rutas públicas de auth */}
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<RegisterForm />} />
+            
+            {/* Rutas protegidas */}
             <Route 
               path="/dashboard" 
               element={
@@ -60,7 +64,9 @@ const App = () => (
                 </PrivateRoute>
               } 
             />
-            <Route path="*" element={<NotFound />} />
+            
+            {/* Cualquier otra ruta → landing */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
