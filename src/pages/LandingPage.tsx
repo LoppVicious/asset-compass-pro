@@ -1,5 +1,4 @@
-
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -7,38 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, BarChart3, PieChart, TrendingUp, TrendingDown, Moon, Sun } from 'lucide-react';
-
-// Lazy load Recharts components
-const LineChart = lazy(() => import('recharts').then(module => ({
-  default: module.LineChart
-})));
-const Line = lazy(() => import('recharts').then(module => ({
-  default: module.Line
-})));
-const XAxis = lazy(() => import('recharts').then(module => ({
-  default: module.XAxis
-})));
-const YAxis = lazy(() => import('recharts').then(module => ({
-  default: module.YAxis
-})));
-const CartesianGrid = lazy(() => import('recharts').then(module => ({
-  default: module.CartesianGrid
-})));
-const Tooltip = lazy(() => import('recharts').then(module => ({
-  default: module.Tooltip
-})));
-const ResponsiveContainer = lazy(() => import('recharts').then(module => ({
-  default: module.ResponsiveContainer
-})));
-const RechartsPieChart = lazy(() => import('recharts').then(module => ({
-  default: module.PieChart
-})));
-const Pie = lazy(() => import('recharts').then(module => ({
-  default: module.Pie
-})));
-const Cell = lazy(() => import('recharts').then(module => ({
-  default: module.Cell
-})));
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 const LandingPage: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -263,34 +232,32 @@ const LandingPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-64" aria-label="Gráfico de evolución semanal del portafolio">
-                  <Suspense fallback={<ChartSkeleton />}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={evolutionData}>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis dataKey="date" className="text-xs" />
-                        <YAxis 
-                          className="text-xs" 
-                          tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} 
-                        />
-                        <Tooltip 
-                          formatter={(value: number) => [`€${value.toLocaleString()}`, "Valor"]}
-                          contentStyle={{
-                            backgroundColor: isDarkMode ? '#374151' : 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            color: isDarkMode ? 'white' : 'black'
-                          }}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#3b82f6" 
-                          strokeWidth={2}
-                          dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </Suspense>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={evolutionData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" className="text-xs" />
+                      <YAxis 
+                        className="text-xs" 
+                        tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} 
+                      />
+                      <Tooltip 
+                        formatter={(value: number) => [`€${value.toLocaleString()}`, "Valor"]}
+                        contentStyle={{
+                          backgroundColor: isDarkMode ? '#374151' : 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          color: isDarkMode ? 'white' : 'black'
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2}
+                        dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
@@ -304,34 +271,32 @@ const LandingPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-64" aria-label="Gráfico circular de exposición por activo en el portafolio">
-                  <Suspense fallback={<ChartSkeleton />}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie 
-                          data={expositionData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={80}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {expositionData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          formatter={(value: number) => [`${value}%`, "Exposición"]}
-                          contentStyle={{
-                            backgroundColor: isDarkMode ? '#374151' : 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            color: isDarkMode ? 'white' : 'black'
-                          }}
-                        />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </Suspense>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie 
+                        data={expositionData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {expositionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: number) => [`${value}%`, "Exposición"]}
+                        contentStyle={{
+                          backgroundColor: isDarkMode ? '#374151' : 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          color: isDarkMode ? 'white' : 'black'
+                        }}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
                 </div>
                 <div className="flex flex-wrap justify-center gap-4 mt-4">
                   {expositionData.map((item, index) => (
