@@ -12,7 +12,6 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 import Dashboard from "./pages/Dashboard";
 import Portfolios from "./pages/Portfolios";
 import OperationsPage from "./pages/OperationsPage";
-import Operations from "./pages/Operations";
 import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
@@ -49,14 +48,6 @@ const App = () => (
               element={
                 <PrivateRoute>
                   <OperationsPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/operaciones"
-              element={
-                <PrivateRoute>
-                  <Operations />
                 </PrivateRoute>
               }
             />
