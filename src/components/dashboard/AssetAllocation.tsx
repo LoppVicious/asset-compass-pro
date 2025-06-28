@@ -24,7 +24,7 @@ export function AssetAllocation({ hasOperations }: AssetAllocationProps) {
   const chartData = hasOperations ? sampleData : emptyData;
   
   return (
-    <Card>
+    <Card className="min-h-[300px]">
       <CardHeader>
         <CardTitle>Distribución de Activos</CardTitle>
       </CardHeader>
@@ -38,7 +38,7 @@ export function AssetAllocation({ hasOperations }: AssetAllocationProps) {
                 cy="50%"
                 innerRadius={60}
                 outerRadius={100}
-                paddingAngle={hasOperations ? 2 : 0}
+                paddingAngle={0}
                 dataKey="value"
               >
                 {chartData.map((entry, index) => (
@@ -70,11 +70,6 @@ export function AssetAllocation({ hasOperations }: AssetAllocationProps) {
               )}
             </PieChart>
           </ResponsiveContainer>
-          {!hasOperations && (
-            <div className="text-center mt-4 text-muted-foreground text-sm">
-              Crea operaciones para ver la distribución de activos
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

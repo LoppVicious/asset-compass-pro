@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { 
   Wallet, 
   TrendingUp, 
-  Activity, 
   DollarSign,
   RefreshCw
 } from "lucide-react";
@@ -83,89 +82,34 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Métricas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Métricas principales - Solo 3 cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <MetricCard
             title="Valor Total del Portafolio"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "€125,000"
-            )}
+            value={operations.length === 0 ? "— — —" : "€125,000"}
             change={operations.length === 0 ? undefined : { value: "+8.5% (€9,750)", isPositive: true }}
             icon={<Wallet className="h-5 w-5 text-blue-600" />}
           />
           <MetricCard
-            title="P/L Diario"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "+2.3%"
-            )}
-            change={operations.length === 0 ? undefined : { value: "+€2,875", isPositive: true }}
+            title="Rendimiento Mensual"
+            value={operations.length === 0 ? "— — —" : "+12.3%"}
+            change={operations.length === 0 ? undefined : { value: "+€13,750", isPositive: true }}
             icon={<TrendingUp className="h-5 w-5 text-green-600" />}
           />
           <MetricCard
-            title="P/L Semanal"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "+5.7%"
-            )}
-            change={operations.length === 0 ? undefined : { value: "+€7,125", isPositive: true }}
-            icon={<Activity className="h-5 w-5 text-orange-600" />}
-          />
-          <MetricCard
-            title="P/L Mensual"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "+12.3%"
-            )}
-            change={operations.length === 0 ? undefined : { value: "+€13,750", isPositive: true }}
-            icon={<DollarSign className="h-5 w-5 text-purple-600" />}
-          />
-        </div>
-
-        {/* Segunda fila de métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <MetricCard
-            title="P/L Anual"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "+24.8%"
-            )}
-            change={operations.length === 0 ? undefined : { value: "+€24,800", isPositive: true }}
-            icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
-          />
-          <MetricCard
-            title="Volatilidad (30d)"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "18.5%"
-            )}
-            icon={<Activity className="h-5 w-5 text-orange-600" />}
-          />
-          <MetricCard
             title="Ratio de Sharpe"
-            value={operations.length === 0 ? (
-              <span className="text-2xl font-bold text-muted-foreground">— — —</span>
-            ) : (
-              "1.34"
-            )}
+            value={operations.length === 0 ? "— — —" : "1.34"}
             change={operations.length === 0 ? undefined : { value: "↑ desde 1.21", isPositive: true }}
             icon={<DollarSign className="h-5 w-5 text-purple-600" />}
           />
         </div>
 
-        {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        {/* Gráficos - Evolución y Distribución */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="min-h-[300px]">
             <PortfolioChart hasOperations={operations.length > 0} />
           </div>
-          <div className="lg:col-span-1">
+          <div className="min-h-[300px]">
             <AssetAllocation hasOperations={operations.length > 0} />
           </div>
         </div>

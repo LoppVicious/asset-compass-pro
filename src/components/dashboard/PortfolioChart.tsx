@@ -17,7 +17,7 @@ interface PortfolioChartProps {
 
 export function PortfolioChart({ hasOperations }: PortfolioChartProps) {
   return (
-    <Card className="col-span-full">
+    <Card className="min-h-[300px]">
       <CardHeader>
         <CardTitle>Evolución del Portafolio</CardTitle>
       </CardHeader>
