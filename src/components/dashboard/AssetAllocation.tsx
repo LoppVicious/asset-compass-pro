@@ -10,9 +10,19 @@ const sampleData = [
   { name: "Bonos EUR", value: 8750, percentage: 7 },
 ];
 
+const emptyData = [
+  { name: "Sin datos", value: 100, percentage: 100 },
+];
+
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
 
-export function AssetAllocation() {
+interface AssetAllocationProps {
+  hasOperations: boolean;
+}
+
+export function AssetAllocation({ hasOperations }: AssetAllocationProps) {
+  const chartData = hasOperations ? sampleData : emptyData;
+  
   return (
     <Card>
       <CardHeader>
@@ -23,36 +33,48 @@ export function AssetAllocation() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={sampleData}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={100}
-                paddingAngle={2}
+                paddingAngle={hasOperations ? 2 : 0}
                 dataKey="value"
               >
-                {sampleData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={hasOperations ? COLORS[index % COLORS.length] : "#e5e7eb"} 
+                  />
                 ))}
               </Pie>
-              <Tooltip 
-                formatter={(value: number) => [`€${value.toLocaleString()}`, "Valor"]}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend 
-                verticalAlign="bottom" 
-                height={36}
-                formatter={(value) => {
-                  const item = sampleData.find(data => data.name === value);
-                  return item ? `${value} (${item.percentage}%)` : value;
-                }}
-              />
+              {hasOperations && (
+                <>
+                  <Tooltip 
+                    formatter={(value: number) => [`€${value.toLocaleString()}`, "Valor"]}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    formatter={(value) => {
+                      const item = sampleData.find(data => data.name === value);
+                      return item ? `${value} (${item.percentage}%)` : value;
+                    }}
+                  />
+                </>
+              )}
             </PieChart>
           </ResponsiveContainer>
+          {!hasOperations && (
+            <div className="text-center mt-4 text-muted-foreground text-sm">
+              Crea operaciones para ver la distribución de activos
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -47,67 +47,81 @@ const samplePositions = [
   },
 ];
 
-export function PositionsTable() {
+interface PositionsTableProps {
+  positions: any[];
+}
+
+export function PositionsTable({ positions }: PositionsTableProps) {
+  // Use sample data if no real positions yet, otherwise use real positions
+  const displayPositions = positions.length > 0 ? positions : samplePositions;
+  const showEmptyState = positions.length === 0;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Posiciones Actuales</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Activo</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="text-right">Cantidad</TableHead>
-              <TableHead className="text-right">Precio Medio</TableHead>
-              <TableHead className="text-right">Precio Actual</TableHead>
-              <TableHead className="text-right">Valor de Mercado</TableHead>
-              <TableHead className="text-right">P/L No Realizado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {samplePositions.map((position) => (
-              <TableRow key={position.symbol} className="hover:bg-muted/50">
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{position.symbol}</div>
-                    <div className="text-sm text-muted-foreground">{position.name}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{position.type}</Badge>
-                </TableCell>
-                <TableCell className="text-right">{position.quantity}</TableCell>
-                <TableCell className="text-right">€{position.avgPrice.toFixed(2)}</TableCell>
-                <TableCell className="text-right">€{position.currentPrice.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-medium">
-                  €{position.marketValue.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className={`flex items-center justify-end space-x-1 ${
-                    position.unrealizedPnL >= 0 ? "text-green-600" : "text-red-600"
-                  }`}>
-                    {position.unrealizedPnL >= 0 ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
+        {showEmptyState ? (
+          <p className="text-center py-12 text-muted-foreground">
+            Crea una operación para generar tus posiciones actuales.
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Activo</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead className="text-right">Cantidad</TableHead>
+                <TableHead className="text-right">Precio Medio</TableHead>
+                <TableHead className="text-right">Precio Actual</TableHead>
+                <TableHead className="text-right">Valor de Mercado</TableHead>
+                <TableHead className="text-right">P/L No Realizado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {displayPositions.map((position, index) => (
+                <TableRow key={position.symbol || position.simbolo || index} className="hover:bg-muted/50">
+                  <TableCell>
                     <div>
-                      <div className="font-medium">
-                        €{Math.abs(position.unrealizedPnL).toLocaleString()}
-                      </div>
-                      <div className="text-xs">
-                        {position.unrealizedPnLPercent > 0 ? "+" : ""}
-                        {position.unrealizedPnLPercent.toFixed(1)}%
+                      <div className="font-medium">{position.symbol || position.simbolo}</div>
+                      <div className="text-sm text-muted-foreground">{position.name || position.simbolo}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{position.type || "Activo"}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{position.quantity || position.cantidad}</TableCell>
+                  <TableCell className="text-right">€{(position.avgPrice || position.precio_medio || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">€{(position.currentPrice || position.precio_medio || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    €{((position.marketValue || (position.cantidad * position.precio_medio)) || 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className={`flex items-center justify-end space-x-1 ${
+                      (position.unrealizedPnL || 0) >= 0 ? "text-green-600" : "text-red-600"
+                    }`}>
+                      {(position.unrealizedPnL || 0) >= 0 ? (
+                        <TrendingUp className="h-4 w-4" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4" />
+                      )}
+                      <div>
+                        <div className="font-medium">
+                          €{Math.abs(position.unrealizedPnL || 0).toLocaleString()}
+                        </div>
+                        <div className="text-xs">
+                          {(position.unrealizedPnLPercent || 0) > 0 ? "+" : ""}
+                          {(position.unrealizedPnLPercent || 0).toFixed(1)}%
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );

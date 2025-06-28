@@ -89,7 +89,7 @@ export type Database = {
             foreignKeyName: "portfolios_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -153,36 +153,6 @@ export type Database = {
           id?: string
           name?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          idioma: string
-          moneda_base: string
-          name: string
-          zona_horaria: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          idioma: string
-          moneda_base: string
-          name: string
-          zona_horaria: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          idioma?: string
-          moneda_base?: string
-          name?: string
-          zona_horaria?: string
         }
         Relationships: []
       }
