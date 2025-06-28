@@ -78,10 +78,16 @@ export const usePortfolios = () => {
   // Update portfolio mutation
   const updatePortfolioMutation = useMutation({
     mutationFn: async ({ id, data: updateData }: { id: string; data: UpdatePortfolioData }) => {
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
         .from('portfolios')
-        .update({ nombre: updateData.name })
+        .update({ 
+          nombre: updateData.name,
+          user_id: user.id 
+        })
         .eq('id', id)
+        .eq('user_id', user.id) // Ensure user can only update their own portfolios
         .select()
         .single();
 
@@ -108,10 +114,13 @@ export const usePortfolios = () => {
   // Delete portfolio mutation
   const deletePortfolioMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!user) throw new Error('User not authenticated');
+
       const { error } = await supabase
         .from('portfolios')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id); // Ensure user can only delete their own portfolios
 
       if (error) throw error;
     },
