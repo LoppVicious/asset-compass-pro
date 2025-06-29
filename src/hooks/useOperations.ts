@@ -56,7 +56,15 @@ export const useOperations = () => {
         .select('id')
         .eq('user_id', user.id);
 
-      if (portfoliosError) throw portfoliosError;
+      if (portfoliosError) {
+        // Don't show toast for "no data" scenarios
+        if (portfoliosError.code === 'PGRST116' || portfoliosError.message.includes('no rows')) {
+          setData([]);
+          setTotalCount(0);
+          return;
+        }
+        throw portfoliosError;
+      }
 
       if (!portfolios || portfolios.length === 0) {
         setData([]);
@@ -85,13 +93,22 @@ export const useOperations = () => {
 
       const { data: operations, error: operationsError, count } = await query;
 
-      if (operationsError) throw operationsError;
+      if (operationsError) {
+        // Don't show toast for "no data" scenarios
+        if (operationsError.code === 'PGRST116' || operationsError.message.includes('no rows')) {
+          setData([]);
+          setTotalCount(0);
+          return;
+        }
+        throw operationsError;
+      }
 
       setData(operations || []);
       setTotalCount(count || 0);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
       setError(message);
+      // Only show toast for actual errors, not empty data scenarios
       toast({
         title: "Error",
         description: `Error al cargar operaciones: ${message}`,

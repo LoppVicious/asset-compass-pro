@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useOperations } from '@/hooks/useOperations';
+import { usePortfolios } from '@/hooks/usePortfolios';
 import { OperationFormModal } from '@/components/operations/OperationFormModal';
 import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,9 +19,29 @@ interface Portfolio {
 }
 
 export default function OperationsPage() {
+  const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
+  
+  // Only use useOperations if we have portfolios
+  const operationsHook = portfolios.length > 0 ? useOperations() : {
+    data: [],
+    isLoading: false,
+    error: null,
+    page: 0,
+    setPage: () => {},
+    search: '',
+    setSearch: () => {},
+    totalCount: 0,
+    canGoNext: false,
+    canGoPrev: false,
+    createOperation: async () => ({ success: false }),
+    updateOperation: async () => ({ success: false }),
+    deleteOperation: async () => ({ success: false }),
+  };
+
   const {
     data: operations,
     isLoading,
+    error,
     page,
     setPage,
     search,
@@ -32,30 +52,12 @@ export default function OperationsPage() {
     createOperation,
     updateOperation,
     deleteOperation,
-  } = useOperations();
+  } = operationsHook;
 
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOperation, setEditingOperation] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { user } = useAuth();
-
-  useEffect(() => {
-    const fetchPortfolios = async () => {
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('portfolios')
-        .select('id, nombre')
-        .eq('user_id', user.id);
-
-      if (!error && data) {
-        setPortfolios(data);
-      }
-    };
-
-    fetchPortfolios();
-  }, [user]);
 
   const handleCreateOperation = () => {
     setEditingOperation(null);
@@ -91,7 +93,17 @@ export default function OperationsPage() {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
 
-  if (portfolios.length === 0 && !isLoading) {
+  if (portfoliosLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (portfolios.length === 0) {
     return (
       <AppLayout>
         <div className="space-y-6">
@@ -124,6 +136,20 @@ export default function OperationsPage() {
             <span>Nueva Operación</span>
           </Button>
         </div>
+
+        {/* Show error message if there's a real error */}
+        {error && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-4">
+                <p className="text-destructive">Error: {error}</p>
+                <p className="text-muted-foreground text-sm mt-2">
+                  Inténtalo de nuevo más tarde
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
