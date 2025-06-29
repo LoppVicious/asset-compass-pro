@@ -145,7 +145,7 @@ export default function DashboardPage() {
             <CardContent className="pt-6">
               <div className="text-center py-4">
                 <p className="text-destructive">
-                  Error al cargar datos: {portfoliosError?.message || operationsError || positionsError || 'Error desconocido'}
+                  Error al cargar datos: {portfoliosError || operationsError || positionsError || 'Error desconocido'}
                 </p>
                 <Button 
                   variant="outline" 
@@ -163,29 +163,29 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <MetricCard
             title="Valor Total del Portafolio"
-            value={positions.length === 0 ? "— — —" : `€${portfolioValue.toLocaleString()}`}
-            change={positions.length === 0 ? undefined : { 
+            value={hasOperations ? `€${portfolioValue.toLocaleString()}` : "— — —"}
+            change={hasOperations ? { 
               value: `+8.5% (€${Math.round(portfolioValue * 0.085).toLocaleString()})`, 
               isPositive: true 
-            }}
+            } : undefined}
             icon={<Wallet className="h-5 w-5 text-blue-600" />}
           />
           <MetricCard
             title="Rendimiento Mensual"
-            value={positions.length === 0 ? "— — —" : `${(monthlyReturn * 100).toFixed(1)}%`}
-            change={positions.length === 0 ? undefined : { 
+            value={hasOperations ? `${(monthlyReturn * 100).toFixed(1)}%` : "— — —"}
+            change={hasOperations ? { 
               value: `+€${Math.round(portfolioValue * monthlyReturn).toLocaleString()}`, 
               isPositive: monthlyReturn > 0 
-            }}
+            } : undefined}
             icon={<TrendingUp className="h-5 w-5 text-green-600" />}
           />
           <MetricCard
             title="Ratio de Sharpe"
-            value={positions.length === 0 ? "— — —" : sharpeRatio.toFixed(2)}
-            change={positions.length === 0 ? undefined : { 
+            value={hasOperations ? sharpeRatio.toFixed(2) : "— — —"}
+            change={hasOperations ? { 
               value: "↑ desde 1.21", 
               isPositive: true 
-            }}
+            } : undefined}
             icon={<DollarSign className="h-5 w-5 text-purple-600" />}
           />
         </div>
@@ -193,10 +193,20 @@ export default function DashboardPage() {
         {/* Gráficos - Evolución y Distribución */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="min-h-[300px]">
-            <PortfolioEvolutionChart 
-              hasData={hasOperations} 
-              data={evolutionData}
-            />
+            {hasOperations ? (
+              <PortfolioEvolutionChart 
+                hasData={hasOperations} 
+                data={evolutionData}
+              />
+            ) : (
+              <Card className="min-h-[300px]">
+                <CardContent className="flex items-center justify-center h-full">
+                  <div className="text-center text-muted-foreground">
+                    Empieza creando operaciones para ver la evolución del portafolio
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
           <div className="min-h-[300px]">
             <AssetAllocationChart 

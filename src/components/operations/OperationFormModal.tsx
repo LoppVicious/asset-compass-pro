@@ -96,6 +96,8 @@ export const OperationFormModal: React.FC<OperationFormModalProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const maxDate = new Date().toISOString().split('T')[0];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -159,7 +161,7 @@ export const OperationFormModal: React.FC<OperationFormModalProps> = ({
               <Input
                 id="cantidad"
                 type="number"
-                step="0.01"
+                step="0.001"
                 min="0"
                 value={formData.cantidad}
                 onChange={(e) => handleChange('cantidad', e.target.value)}
@@ -187,6 +189,7 @@ export const OperationFormModal: React.FC<OperationFormModalProps> = ({
               id="fecha"
               type="date"
               value={formData.fecha}
+              max={maxDate}
               onChange={(e) => handleChange('fecha', e.target.value)}
               required
             />
