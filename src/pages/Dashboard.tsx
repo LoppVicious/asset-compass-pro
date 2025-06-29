@@ -132,7 +132,7 @@ export default function Dashboard() {
             <CardContent className="pt-6">
               <div className="text-center py-4">
                 <p className="text-destructive">
-                  Error al cargar datos: {portfoliosError || operationsError || positionsError}
+                  Error al cargar datos: {portfoliosError?.message || operationsError?.message || positionsError?.message || 'Error desconocido'}
                 </p>
                 <Button 
                   variant="outline" 
