@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { useOperations } from '@/hooks/useOperations';
+import { useFetchOperations } from '@/hooks/useFetchOperations';
+import { useMutateOperation } from '@/hooks/useMutateOperation';
 import { usePortfolios } from '@/hooks/usePortfolios';
 import { OperationFormModal } from '@/components/operations/OperationFormModal';
-import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { OperationsTable } from '@/components/operations/OperationsTable';
+import { DeleteConfirmationDialog } from '@/components/operations/DeleteConfirmationDialog';
+import { Plus, Search, Loader2 } from 'lucide-react';
 
 interface Portfolio {
   id: string;
@@ -21,23 +20,6 @@ interface Portfolio {
 export default function OperationsPage() {
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
   
-  // Only use useOperations if we have portfolios
-  const operationsHook = portfolios.length > 0 ? useOperations() : {
-    data: [],
-    isLoading: false,
-    error: null,
-    page: 0,
-    setPage: () => {},
-    search: '',
-    setSearch: () => {},
-    totalCount: 0,
-    canGoNext: false,
-    canGoPrev: false,
-    createOperation: async () => ({ success: false }),
-    updateOperation: async () => ({ success: false }),
-    deleteOperation: async () => ({ success: false }),
-  };
-
   const {
     data: operations,
     isLoading,
@@ -49,15 +31,18 @@ export default function OperationsPage() {
     totalCount,
     canGoNext,
     canGoPrev,
+    refetch,
+  } = useFetchOperations();
+
+  const {
     createOperation,
     updateOperation,
     deleteOperation,
-  } = operationsHook;
+  } = useMutateOperation();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOperation, setEditingOperation] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const { user } = useAuth();
 
   const handleCreateOperation = () => {
     setEditingOperation(null);
@@ -70,27 +55,29 @@ export default function OperationsPage() {
   };
 
   const handleFormSubmit = async (data: any) => {
+    let result;
     if (editingOperation) {
-      return await updateOperation(editingOperation.id, data);
+      result = await updateOperation(editingOperation.id, data);
     } else {
-      return await createOperation(data);
+      result = await createOperation(data);
     }
+    
+    if (result.success) {
+      setIsModalOpen(false);
+      refetch();
+    }
+    
+    return result;
   };
 
-  const handleDeleteOperation = async (id: string) => {
-    await deleteOperation(id);
-    setDeleteConfirmId(null);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES');
+  const handleDeleteOperation = async () => {
+    if (deleteConfirmId) {
+      const result = await deleteOperation(deleteConfirmId);
+      if (result.success) {
+        refetch();
+      }
+      setDeleteConfirmId(null);
+    }
   };
 
   if (portfoliosLoading) {
@@ -137,7 +124,6 @@ export default function OperationsPage() {
           </Button>
         </div>
 
-        {/* Show error message if there's a real error */}
         {error && (
           <Card>
             <CardContent className="pt-6">
@@ -179,88 +165,18 @@ export default function OperationsPage() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
-            ) : operations.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No se encontraron operaciones</p>
-              </div>
             ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Símbolo</TableHead>
-                      <TableHead className="text-right">Cantidad</TableHead>
-                      <TableHead className="text-right">Precio</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-center">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {operations.map((operation) => (
-                      <TableRow key={operation.id}>
-                        <TableCell>{formatDate(operation.fecha)}</TableCell>
-                        <TableCell>
-                          <Badge variant={operation.tipo === 'compra' ? 'default' : 'destructive'}>
-                            {operation.tipo}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{operation.simbolo}</TableCell>
-                        <TableCell className="text-right">{operation.cantidad}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(operation.precio)}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(operation.cantidad * operation.precio)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditOperation(operation)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDeleteConfirmId(operation.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Página {page + 1} de {Math.ceil(totalCount / 10)}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={!canGoPrev}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Anterior
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={!canGoNext}
-                    >
-                      Siguiente
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </>
+              <OperationsTable
+                operations={operations}
+                totalCount={totalCount}
+                page={page}
+                canGoNext={canGoNext}
+                canGoPrev={canGoPrev}
+                onNextPage={() => setPage(page + 1)}
+                onPrevPage={() => setPage(page - 1)}
+                onEdit={handleEditOperation}
+                onDelete={setDeleteConfirmId}
+              />
             )}
           </CardContent>
         </Card>
@@ -274,24 +190,11 @@ export default function OperationsPage() {
           isLoading={isLoading}
         />
 
-        <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción no se puede deshacer. Se eliminará permanentemente la operación.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteConfirmId && handleDeleteOperation(deleteConfirmId)}
-              >
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteConfirmationDialog
+          isOpen={!!deleteConfirmId}
+          onClose={() => setDeleteConfirmId(null)}
+          onConfirm={handleDeleteOperation}
+        />
       </div>
     </AppLayout>
   );

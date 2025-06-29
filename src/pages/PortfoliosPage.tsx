@@ -1,22 +1,13 @@
 
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { usePortfolios } from '@/hooks/usePortfolios';
+import { useFetchPortfolios } from '@/hooks/useFetchPortfolios';
+import { useMutatePortfolio } from '@/hooks/useMutatePortfolio';
 import { PortfolioFormModal } from '@/components/portfolios/PortfolioFormModal';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PortfoliosGrid } from '@/components/portfolios/PortfoliosGrid';
+import { PortfolioDeleteDialog } from '@/components/portfolios/PortfolioDeleteDialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Plus, Briefcase, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Briefcase, Loader2 } from 'lucide-react';
 
 interface Portfolio {
   id: string;
@@ -29,10 +20,14 @@ export default function PortfoliosPage() {
   const {
     data: portfolios,
     isLoading,
+    refetch,
+  } = useFetchPortfolios();
+
+  const {
     createPortfolio,
     updatePortfolio,
     deletePortfolio,
-  } = usePortfolios();
+  } = useMutatePortfolio();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -43,6 +38,7 @@ export default function PortfoliosPage() {
   const handleCreatePortfolio = (data: { name: string }) => {
     createPortfolio(data);
     setIsCreateModalOpen(false);
+    setTimeout(() => refetch(), 1000);
   };
 
   const handleEditPortfolio = (data: { name: string }) => {
@@ -50,6 +46,7 @@ export default function PortfoliosPage() {
       updatePortfolio(editingPortfolio.id, data);
       setIsEditModalOpen(false);
       setEditingPortfolio(null);
+      setTimeout(() => refetch(), 1000);
     }
   };
 
@@ -58,6 +55,7 @@ export default function PortfoliosPage() {
       deletePortfolio(deletingPortfolio.id);
       setIsDeleteDialogOpen(false);
       setDeletingPortfolio(null);
+      setTimeout(() => refetch(), 1000);
     }
   };
 
@@ -69,14 +67,6 @@ export default function PortfoliosPage() {
   const openDeleteDialog = (portfolio: Portfolio) => {
     setDeletingPortfolio(portfolio);
     setIsDeleteDialogOpen(true);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   };
 
   if (isLoading) {
@@ -121,58 +111,14 @@ export default function PortfoliosPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {portfolios.map((portfolio) => (
-              <Card key={portfolio.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center space-x-2">
-                      <Briefcase className="h-5 w-5 text-blue-600" />
-                      <span>{portfolio.nombre}</span>
-                    </CardTitle>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModal(portfolio)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openDeleteDialog(portfolio)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Creado</span>
-                      <span className="text-sm">{formatDate(portfolio.fecha_creacion)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* Add new portfolio card */}
-            <Card
-              className="border-dashed border-2 border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors cursor-pointer"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <CardContent className="flex flex-col items-center justify-center p-6 h-full min-h-[200px]">
-                <Plus className="h-12 w-12 text-muted-foreground mb-2" />
-                <span className="text-muted-foreground">Crear Nuevo Portfolio</span>
-              </CardContent>
-            </Card>
-          </div>
+          <PortfoliosGrid
+            portfolios={portfolios}
+            onEdit={openEditModal}
+            onDelete={openDeleteDialog}
+            onCreateNew={() => setIsCreateModalOpen(true)}
+          />
         )}
 
-        {/* Create Portfolio Modal */}
         <PortfolioFormModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
@@ -180,7 +126,6 @@ export default function PortfoliosPage() {
           title="Nuevo Portfolio"
         />
 
-        {/* Edit Portfolio Modal */}
         <PortfolioFormModal
           isOpen={isEditModalOpen}
           onClose={() => {
@@ -192,24 +137,15 @@ export default function PortfoliosPage() {
           title="Editar Portfolio"
         />
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción no se puede deshacer. Se eliminará permanentemente el portfolio
-                "{deletingPortfolio?.nombre}" y todos sus datos asociados.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeletePortfolio}>
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <PortfolioDeleteDialog
+          isOpen={isDeleteDialogOpen}
+          portfolio={deletingPortfolio}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setDeletingPortfolio(null);
+          }}
+          onConfirm={handleDeletePortfolio}
+        />
       </div>
     </AppLayout>
   );
