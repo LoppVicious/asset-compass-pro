@@ -2,20 +2,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const sampleData = [
-  { date: "Ene", value: 100000 },
-  { date: "Feb", value: 105000 },
-  { date: "Mar", value: 98000 },
-  { date: "Abr", value: 112000 },
-  { date: "May", value: 108000 },
-  { date: "Jun", value: 125000 },
-];
+interface ChartData {
+  date: string;
+  value: number;
+}
 
 interface PortfolioChartProps {
   hasOperations: boolean;
+  data?: ChartData[];
 }
 
-export function PortfolioChart({ hasOperations }: PortfolioChartProps) {
+export function PortfolioChart({ hasOperations, data = [] }: PortfolioChartProps) {
   return (
     <Card className="min-h-[300px]">
       <CardHeader>
@@ -29,7 +26,7 @@ export function PortfolioChart({ hasOperations }: PortfolioChartProps) {
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sampleData}>
+              <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 

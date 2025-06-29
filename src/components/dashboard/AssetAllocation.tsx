@@ -2,26 +2,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
-const sampleData = [
-  { name: "VWCE (ETF)", value: 45000, percentage: 36 },
-  { name: "BTC", value: 31250, percentage: 25 },
-  { name: "SPY (ETF)", value: 25000, percentage: 20 },
-  { name: "EUNL (ETF)", value: 15000, percentage: 12 },
-  { name: "Bonos EUR", value: 8750, percentage: 7 },
-];
-
-const emptyData = [
-  { name: "Sin datos", value: 100, percentage: 100 },
-];
+interface PieData {
+  name: string;
+  value: number;
+  percentage: number;
+}
 
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444'];
 
 interface AssetAllocationProps {
   hasOperations: boolean;
+  data?: PieData[];
 }
 
-export function AssetAllocation({ hasOperations }: AssetAllocationProps) {
-  const chartData = hasOperations ? sampleData : emptyData;
+export function AssetAllocation({ hasOperations, data = [] }: AssetAllocationProps) {
+  const chartData = data.length > 0 ? data : [{ name: "Sin datos", value: 100, percentage: 100 }];
   
   return (
     <Card className="min-h-[300px]">
@@ -62,7 +57,7 @@ export function AssetAllocation({ hasOperations }: AssetAllocationProps) {
                     verticalAlign="bottom" 
                     height={36}
                     formatter={(value) => {
-                      const item = sampleData.find(data => data.name === value);
+                      const item = data.find(d => d.name === value);
                       return item ? `${value} (${item.percentage}%)` : value;
                     }}
                   />
