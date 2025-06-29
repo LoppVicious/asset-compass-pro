@@ -10,7 +10,7 @@ import LandingPage from "./pages/LandingPage";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import Dashboard from "./pages/Dashboard";
-import Portfolios from "./pages/Portfolios";
+import PortfoliosPage from "./pages/PortfoliosPage";
 import OperationsPage from "./pages/OperationsPage";
 import Settings from "./pages/Settings";
 
@@ -39,7 +39,7 @@ const App = () => (
               path="/portfolios"
               element={
                 <PrivateRoute>
-                  <Portfolios />
+                  <PortfoliosPage />
                 </PrivateRoute>
               }
             />
