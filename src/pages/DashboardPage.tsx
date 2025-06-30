@@ -145,7 +145,12 @@ export default function DashboardPage() {
             <CardContent className="pt-6">
               <div className="text-center py-4">
                 <p className="text-destructive">
-                  Error al cargar datos: {portfoliosError || operationsError || positionsError || 'Error desconocido'}
+                  Error al cargar datos: {
+                    (portfoliosError instanceof Error ? portfoliosError.message : portfoliosError) ||
+                    (operationsError instanceof Error ? operationsError.message : operationsError) ||
+                    (positionsError instanceof Error ? positionsError.message : positionsError) ||
+                    'Error desconocido'
+                  }
                 </p>
                 <Button 
                   variant="outline" 
