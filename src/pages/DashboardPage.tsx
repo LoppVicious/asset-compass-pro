@@ -38,6 +38,12 @@ export default function DashboardPage() {
   const { data: operations, isLoading: operationsLoading, error: operationsError, refetch: refetchOperations } = useOperations(portfolioId);
   const { data: positions, isLoading: positionsLoading, error: positionsError, refetch: refetchPositions } = usePositions(portfolioId);
 
+  // Helper function to safely extract error messages
+  const getErrorMessage = (error: unknown): string => {
+    if (!error) return '';
+    return typeof error === 'string' ? error : (error?.message ?? 'Error desconocido');
+  };
+
   // Calculate metrics from real data
   const portfolioValue = computeValorTotal(positions);
   const monthlyReturn = computeRendimientoMensual(operations);
@@ -91,6 +97,7 @@ export default function DashboardPage() {
 
   // Error handling
   const hasError = portfoliosError || operationsError || positionsError;
+  const errorMessage = getErrorMessage(portfoliosError) || getErrorMessage(operationsError) || getErrorMessage(positionsError) || 'Error desconocido';
 
   if (isLoading) {
     return (
@@ -145,12 +152,7 @@ export default function DashboardPage() {
             <CardContent className="pt-6">
               <div className="text-center py-4">
                 <p className="text-destructive">
-                  Error al cargar datos: {
-                    (portfoliosError instanceof Error ? portfoliosError.message : portfoliosError) ||
-                    (operationsError instanceof Error ? operationsError.message : operationsError) ||
-                    (positionsError instanceof Error ? positionsError.message : positionsError) ||
-                    'Error desconocido'
-                  }
+                  Error al cargar datos: {errorMessage}
                 </p>
                 <Button 
                   variant="outline" 
