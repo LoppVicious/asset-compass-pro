@@ -41,7 +41,12 @@ export default function DashboardPage() {
   // Helper function to safely extract error messages
   const getErrorMessage = (error: unknown): string => {
     if (!error) return '';
-    return typeof error === 'string' ? error : (error?.message ?? 'Error desconocido');
+    if (typeof error === 'string') {
+      return error;
+    } else if (error && typeof (error as any).message === 'string') {
+      return (error as any).message;
+    }
+    return 'Error desconocido';
   };
 
   // Calculate metrics from real data
