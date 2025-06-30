@@ -40,6 +40,17 @@ export default function Dashboard() {
   const { data: operations, isLoading: operationsLoading, error: operationsError, refetch: refetchOperations } = useOperations();
   const { data: positions, isLoading: positionsLoading, error: positionsError, refetch: refetchPositions } = usePositions(portfolioId);
 
+  // Helper function to safely extract error messages
+  const getErrorMessage = (error: unknown): string => {
+    if (!error) return '';
+    if (typeof error === 'string') {
+      return error;
+    } else if (error && typeof (error as any).message === 'string') {
+      return (error as any).message;
+    }
+    return 'Error desconocido';
+  };
+
   // Calculate metrics from real data
   const portfolioValue = calculatePortfolioValue(positions);
   const monthlyReturn = calculateMonthlyReturn(operations);
@@ -78,6 +89,16 @@ export default function Dashboard() {
 
   // Error handling
   const hasError = portfoliosError || operationsError || positionsError;
+  
+  // Define error message properly
+  let errorMessage = 'Error desconocido';
+  if (portfoliosError) {
+    errorMessage = getErrorMessage(portfoliosError);
+  } else if (operationsError) {
+    errorMessage = getErrorMessage(operationsError);
+  } else if (positionsError) {
+    errorMessage = getErrorMessage(positionsError);
+  }
 
   if (isLoading) {
     return (
@@ -132,7 +153,7 @@ export default function Dashboard() {
             <CardContent className="pt-6">
               <div className="text-center py-4">
                 <p className="text-destructive">
-                  Error al cargar datos: {portfoliosError?.message || operationsError || positionsError || 'Error desconocido'}
+                  Error al cargar datos: {errorMessage}
                 </p>
                 <Button 
                   variant="outline" 
