@@ -70,8 +70,8 @@ export default function DashboardPage() {
 
   const allocationData = hasPositions ? positions.map(position => ({
     name: position.simbolo,
-    value: position.valor_total || 0,
-    percentage: portfolioValue > 0 ? Math.round(((position.valor_total || 0) / portfolioValue) * 100) : 0
+    value: position.cantidad * position.precio_actual,
+    percentage: portfolioValue > 0 ? Math.round(((position.cantidad * position.precio_actual) / portfolioValue) * 100) : 0
   })) : [];
 
   const handleRefreshData = () => {
@@ -103,7 +103,16 @@ export default function DashboardPage() {
 
   // Error handling
   const hasError = portfoliosError || operationsError || positionsError;
-  const errorMessage = getErrorMessage(portfoliosError) || getErrorMessage(operationsError) || getErrorMessage(positionsError) || 'Error desconocido';
+  
+  // Define error message properly
+  let errorMessage = 'Error desconocido';
+  if (portfoliosError) {
+    errorMessage = getErrorMessage(portfoliosError);
+  } else if (operationsError) {
+    errorMessage = getErrorMessage(operationsError);
+  } else if (positionsError) {
+    errorMessage = getErrorMessage(positionsError);
+  }
 
   if (isLoading) {
     return (
@@ -252,7 +261,7 @@ export default function DashboardPage() {
             ) : positionsError ? (
               <div className="text-center py-8">
                 <p className="text-destructive">
-                  Error: {positionsError.message}
+                  Error: {getErrorMessage(positionsError)}
                 </p>
               </div>
             ) : positions.length === 0 ? (
