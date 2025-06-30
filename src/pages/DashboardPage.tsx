@@ -5,7 +5,8 @@ import { PortfolioEvolutionChart } from "@/components/dashboard/PortfolioEvoluti
 import { AssetAllocationChart } from "@/components/dashboard/AssetAllocationChart";
 import { PositionsTable } from "@/components/portfolios/PositionsTable";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Wallet, 
   TrendingUp, 
@@ -228,7 +229,72 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Tabla de posiciones */}
+        {/* Posiciones Actuales */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Posiciones Actuales</CardTitle>
+            <Button 
+              onClick={refetchPositions} 
+              variant="outline" 
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Actualizar Precios</span>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {positionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Cargando posiciones...</span>
+              </div>
+            ) : positionsError ? (
+              <div className="text-center py-8">
+                <p className="text-destructive">
+                  Error: {positionsError.message}
+                </p>
+              </div>
+            ) : positions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Crea operaciones para generar posiciones.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ticker</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">Precio Compra</TableHead>
+                    <TableHead className="text-right">Precio Actual</TableHead>
+                    <TableHead className="text-right">P/L Absoluto</TableHead>
+                    <TableHead className="text-right">P/L %</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {positions.map((position) => (
+                    <TableRow key={position.id}>
+                      <TableCell className="font-medium">{position.simbolo}</TableCell>
+                      <TableCell className="text-right">{position.cantidad}</TableCell>
+                      <TableCell className="text-right">€{position.precio_compra.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">€{position.precio_actual.toFixed(2)}</TableCell>
+                      <TableCell className={`text-right font-medium ${position.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {position.pl >= 0 ? '+' : ''}€{position.pl.toFixed(2)}
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${position.plPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {position.plPercent >= 0 ? '+' : ''}{position.plPercent.toFixed(2)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tabla de posiciones original */}
         <PositionsTable positions={positions} />
       </div>
     </AppLayout>
