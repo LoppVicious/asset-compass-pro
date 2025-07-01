@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { PortfolioEvolutionChart } from "@/components/dashboard/PortfolioEvolutionChart";
@@ -155,7 +154,7 @@ export default function DashboardPage() {
               {activePortfolio.nombre} - {new Date().toLocaleDateString('es-ES')}
             </p>
           </div>
-          <Button onClick={handleRefreshData} className="flex items-center space-x-2">
+          <Button onClick={() => handleRefreshData()} className="flex items-center space-x-2">
             <RefreshCw className="h-4 w-4" />
             <span>Actualizar Datos</span>
           </Button>
@@ -243,7 +242,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Posiciones Actuales</CardTitle>
             <Button 
-              onClick={refetchPositions} 
+              onClick={() => refetchPositions()} 
               variant="outline" 
               size="sm"
               className="flex items-center space-x-2"

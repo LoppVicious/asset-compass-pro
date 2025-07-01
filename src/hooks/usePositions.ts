@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 interface Position {
   id: string;
@@ -86,14 +87,18 @@ export const usePositions = (portfolioId?: string) => {
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
     refetchInterval: false,
-    onError: (error: any) => {
+  });
+
+  // Handle errors with useEffect
+  useEffect(() => {
+    if (query.error) {
       toast({
         title: "Error",
-        description: `Error al cargar posiciones: ${error.message}`,
+        description: `Error al cargar posiciones: ${query.error.message}`,
         variant: "destructive",
       });
-    },
-  });
+    }
+  }, [query.error, toast]);
 
   return {
     data: query.data || [],
