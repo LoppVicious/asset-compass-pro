@@ -91,12 +91,12 @@ export default function DashboardPage() {
     }, 2000);
   };
 
-  // Auto-refresh when operations change
+  // Auto-refresh positions when portfolioId changes
   useEffect(() => {
     if (portfolioId) {
       refetchPositions();
     }
-  }, [operations, portfolioId, refetchPositions]);
+  }, [portfolioId, refetchPositions]);
 
   // Loading state
   const isLoading = portfoliosLoading || operationsLoading || positionsLoading;

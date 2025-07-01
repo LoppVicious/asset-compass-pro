@@ -161,10 +161,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      recalc_positions_for_portfolio: {
-        Args: { target_portfolio: string }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
