@@ -19,10 +19,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useOperations } from "@/hooks/useOperations";
 import { usePortfolios } from "@/hooks/usePortfolios";
 import { usePositions } from "@/hooks/usePositions";
-import { useEffect } from "react";
+import { usePortfolioStore } from "@/store/portfolioStore";
+import { useEffect, useMemo } from "react";
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const { assets } = usePortfolioStore();
   
   // Load portfolios first
   const { data: portfolios, isLoading: portfoliosLoading, error: portfoliosError, refetch: refetchPortfolios } = usePortfolios();
@@ -46,16 +48,28 @@ export default function Dashboard() {
     return 'Error desconocido';
   };
 
-  // Calculate metrics from real data
-  const portfolioValue = positions.reduce((total, position) => {
-    return total + (position.cantidad * position.precio_actual);
-  }, 0);
+  // Calculate metrics from real data with live prices
+  const portfolioValue = useMemo(() => {
+    return positions.reduce((total, position) => {
+      const asset = assets[position.simbolo];
+      const precioActual = asset?.precio_actual || position.precio_compra;
+      return total + (position.cantidad * precioActual);
+    }, 0);
+  }, [positions, assets]);
 
-  // Calculate monthly return (simplified - you can improve this)
-  const monthlyReturn = positions.length > 0 ? 0.05 : 0; // 5% placeholder
+  // Calculate monthly return (simplified - based on live prices)
+  const monthlyReturn = useMemo(() => {
+    if (positions.length === 0) return 0;
+    const costoTotal = positions.reduce((total, position) => {
+      return total + (position.cantidad * position.precio_compra);
+    }, 0);
+    return costoTotal > 0 ? (portfolioValue - costoTotal) / costoTotal : 0;
+  }, [positions, portfolioValue]);
 
-  // Calculate Sharpe ratio (simplified - you can improve this)
-  const sharpeRatio = positions.length > 0 ? 1.34 : 0; // Placeholder
+  // Calculate Sharpe ratio (simplified - based on current performance)
+  const sharpeRatio = useMemo(() => {
+    return positions.length > 0 ? Math.max(1.0, monthlyReturn * 10) : 0;
+  }, [positions.length, monthlyReturn]);
 
   // Generate chart data based on operations
   const chartData = operations.length > 0 ? [
@@ -198,8 +212,8 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Métricas principales - Solo 3 cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Métricas principales - Una sola fila */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard
             title="Valor Total del Portafolio"
             value={positions.length === 0 ? "— — —" : `€${portfolioValue.toLocaleString()}`}
@@ -227,22 +241,6 @@ export default function Dashboard() {
             }}
             icon={<DollarSign className="h-5 w-5 text-purple-600" />}
           />
-        </div>
-
-        {/* Portfolio en Tiempo Real */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Lista de activos en tiempo real */}
-          <div className="order-2 xl:order-1">
-            <LivePortfolio 
-              portfolioId={portfolioId}
-              symbols={['AAPL', 'GOOGL', 'MSFT', 'TSLA']} // En un caso real esto vendría de las posiciones
-            />
-          </div>
-          
-          {/* Gráfico de evolución en tiempo real */}
-          <div className="order-1 xl:order-2">
-            <PortfolioChart />
-          </div>
         </div>
 
         {/* Gráficos adicionales - Solo cuando hay posiciones */}

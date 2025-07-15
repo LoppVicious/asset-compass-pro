@@ -10,6 +10,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { usePortfolioStore } from "@/store/portfolioStore";
+import { useMemo } from "react";
 
 const samplePositions = [
   {
@@ -52,8 +54,29 @@ interface PositionsTableProps {
 }
 
 export function PositionsTable({ positions }: PositionsTableProps) {
-  // Use sample data if no real positions yet, otherwise use real positions
-  const displayPositions = positions.length > 0 ? positions : samplePositions;
+  const { assets } = usePortfolioStore();
+  
+  // Enriquece las posiciones con precios en tiempo real
+  const enrichedPositions = useMemo(() => {
+    if (positions.length === 0) return samplePositions;
+    
+    return positions.map(position => {
+      const asset = assets[position.simbolo];
+      const precioActual = asset?.precio_actual || position.precio_compra;
+      const valorMercado = position.cantidad * precioActual;
+      const pnlNoRealizado = valorMercado - (position.cantidad * position.precio_compra);
+      const pnlPorcentual = ((precioActual - position.precio_compra) / position.precio_compra) * 100;
+      
+      return {
+        ...position,
+        precio_actual: precioActual,
+        valor_mercado: valorMercado,
+        pnl_no_realizado: pnlNoRealizado,
+        pnl_porcentual: pnlPorcentual,
+      };
+    });
+  }, [positions, assets]);
+  
   const showEmptyState = positions.length === 0;
 
   return (
@@ -80,7 +103,7 @@ export function PositionsTable({ positions }: PositionsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayPositions.map((position, index) => (
+              {enrichedPositions.map((position, index) => (
                 <TableRow key={position.symbol || position.simbolo || index} className="hover:bg-muted/50">
                   <TableCell>
                     <div>
@@ -89,30 +112,30 @@ export function PositionsTable({ positions }: PositionsTableProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{position.type || "Activo"}</Badge>
+                    <Badge variant="secondary">{position.type || position.tipo_activo || "Activo"}</Badge>
                   </TableCell>
                   <TableCell className="text-right">{position.quantity || position.cantidad}</TableCell>
-                  <TableCell className="text-right">€{(position.avgPrice || position.precio_medio || 0).toFixed(2)}</TableCell>
-                  <TableCell className="text-right">€{(position.currentPrice || position.precio_medio || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">€{(position.avgPrice || position.precio_compra || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">€{(position.currentPrice || position.precio_actual || 0).toFixed(2)}</TableCell>
                   <TableCell className="text-right font-medium">
-                    €{((position.marketValue || (position.cantidad * position.precio_medio)) || 0).toLocaleString()}
+                    €{((position.marketValue || position.valor_mercado || 0)).toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className={`flex items-center justify-end space-x-1 ${
-                      (position.unrealizedPnL || 0) >= 0 ? "text-green-600" : "text-red-600"
+                      (position.unrealizedPnL || position.pnl_no_realizado || 0) >= 0 ? "text-green-600" : "text-red-600"
                     }`}>
-                      {(position.unrealizedPnL || 0) >= 0 ? (
+                      {(position.unrealizedPnL || position.pnl_no_realizado || 0) >= 0 ? (
                         <TrendingUp className="h-4 w-4" />
                       ) : (
                         <TrendingDown className="h-4 w-4" />
                       )}
                       <div>
                         <div className="font-medium">
-                          €{Math.abs(position.unrealizedPnL || 0).toLocaleString()}
+                          €{Math.abs(position.unrealizedPnL || position.pnl_no_realizado || 0).toLocaleString()}
                         </div>
                         <div className="text-xs">
-                          {(position.unrealizedPnLPercent || 0) > 0 ? "+" : ""}
-                          {(position.unrealizedPnLPercent || 0).toFixed(1)}%
+                          {(position.unrealizedPnLPercent || position.pnl_porcentual || 0) > 0 ? "+" : ""}
+                          {(position.unrealizedPnLPercent || position.pnl_porcentual || 0).toFixed(1)}%
                         </div>
                       </div>
                     </div>
