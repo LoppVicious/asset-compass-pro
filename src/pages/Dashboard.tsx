@@ -1,7 +1,9 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { PortfolioChart } from "@/components/dashboard/PortfolioChart";
+import { PortfolioChart as LegacyPortfolioChart } from "@/components/dashboard/PortfolioChart";
+import { PortfolioChart } from "@/features/portfolio/components/PortfolioChart";
+import { LivePortfolio } from "@/features/portfolio/components/LivePortfolio";
 import { AssetAllocation } from "@/components/dashboard/AssetAllocation";
 import { PositionsTable } from "@/components/portfolios/PositionsTable";
 import { Button } from "@/components/ui/button";
@@ -227,11 +229,27 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Gráficos - Evolución y Distribución */}
+        {/* Portfolio en Tiempo Real */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Lista de activos en tiempo real */}
+          <div className="order-2 xl:order-1">
+            <LivePortfolio 
+              portfolioId={portfolioId}
+              symbols={['AAPL', 'GOOGL', 'MSFT', 'TSLA']} // En un caso real esto vendría de las posiciones
+            />
+          </div>
+          
+          {/* Gráfico de evolución en tiempo real */}
+          <div className="order-1 xl:order-2">
+            <PortfolioChart />
+          </div>
+        </div>
+
+        {/* Gráficos adicionales - Solo cuando hay posiciones */}
         {positions.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="min-h-[300px]">
-              <PortfolioChart 
+              <LegacyPortfolioChart 
                 hasOperations={operations.length > 0} 
                 data={chartData}
               />
