@@ -303,7 +303,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Tabla de posiciones original */}
-        <PositionsTable positions={positions} />
+        <PositionsTable />
       </div>
     </AppLayout>
   );

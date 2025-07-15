@@ -12,55 +12,39 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { usePortfolioStore } from "@/store/portfolioStore";
 import { useMemo } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-const samplePositions = [
-  {
-    symbol: "VWCE",
-    name: "Vanguard FTSE All-World",
-    type: "ETF",
-    quantity: 450,
-    avgPrice: 100.00,
-    currentPrice: 105.50,
-    marketValue: 47475,
-    unrealizedPnL: 2475,
-    unrealizedPnLPercent: 5.5,
-  },
-  {
-    symbol: "BTC",
-    name: "Bitcoin",
-    type: "Crypto",
-    quantity: 0.75,
-    avgPrice: 35000,
-    currentPrice: 41667,
-    marketValue: 31250,
-    unrealizedPnL: 5000,
-    unrealizedPnLPercent: 19.0,
-  },
-  {
-    symbol: "SPY",
-    name: "SPDR S&P 500 ETF",
-    type: "ETF",
-    quantity: 60,
-    avgPrice: 420.00,
-    currentPrice: 416.67,
-    marketValue: 25000,
-    unrealizedPnL: -200,
-    unrealizedPnLPercent: -0.8,
-  },
-];
+interface PositionsTableProps {}
 
-interface PositionsTableProps {
-  positions: any[];
-}
-
-export function PositionsTable({ positions }: PositionsTableProps) {
+export function PositionsTable({}: PositionsTableProps) {
   const { assets } = usePortfolioStore();
   
-  // Enriquece las posiciones con precios en tiempo real
+  // Fetch all positions from all portfolios
+  const { data: allPositions = [], isLoading } = useQuery({
+    queryKey: ['all-positions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('positions')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Format numbers with thousands separators and decimals
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('es-ES', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+  
+  // Enrich positions with live prices
   const enrichedPositions = useMemo(() => {
-    if (positions.length === 0) return samplePositions;
-    
-    return positions.map(position => {
+    return allPositions.map(position => {
       const asset = assets[position.simbolo];
       const precioActual = asset?.precio_actual || position.precio_compra;
       const valorMercado = position.cantidad * precioActual;
@@ -75,9 +59,9 @@ export function PositionsTable({ positions }: PositionsTableProps) {
         pnl_porcentual: pnlPorcentual,
       };
     });
-  }, [positions, assets]);
+  }, [allPositions, assets]);
   
-  const showEmptyState = positions.length === 0;
+  const showEmptyState = enrichedPositions.length === 0;
 
   return (
     <Card>
@@ -85,7 +69,11 @@ export function PositionsTable({ positions }: PositionsTableProps) {
         <CardTitle>Posiciones Actuales</CardTitle>
       </CardHeader>
       <CardContent>
-        {showEmptyState ? (
+        {isLoading ? (
+          <p className="text-center py-12 text-muted-foreground">
+            Cargando posiciones...
+          </p>
+        ) : showEmptyState ? (
           <p className="text-center py-12 text-muted-foreground">
             Crea una operación para generar tus posiciones actuales.
           </p>
@@ -104,38 +92,38 @@ export function PositionsTable({ positions }: PositionsTableProps) {
             </TableHeader>
             <TableBody>
               {enrichedPositions.map((position, index) => (
-                <TableRow key={position.symbol || position.simbolo || index} className="hover:bg-muted/50">
+                <TableRow key={position.id || index} className="hover:bg-muted/50">
                   <TableCell>
                     <div>
-                      <div className="font-medium">{position.symbol || position.simbolo}</div>
-                      <div className="text-sm text-muted-foreground">{position.name || position.simbolo}</div>
+                      <div className="font-medium">{position.simbolo}</div>
+                      <div className="text-sm text-muted-foreground">{position.simbolo}</div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{position.type || position.tipo_activo || "Activo"}</Badge>
+                    <Badge variant="secondary">{position.tipo_activo}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">{position.quantity || position.cantidad}</TableCell>
-                  <TableCell className="text-right">€{(position.avgPrice || position.precio_compra || 0).toFixed(2)}</TableCell>
-                  <TableCell className="text-right">€{(position.currentPrice || position.precio_actual || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{position.cantidad}</TableCell>
+                  <TableCell className="text-right">€{formatCurrency(position.precio_compra)}</TableCell>
+                  <TableCell className="text-right">€{formatCurrency(position.precio_actual)}</TableCell>
                   <TableCell className="text-right font-medium">
-                    €{((position.marketValue || position.valor_mercado || 0)).toLocaleString()}
+                    €{formatCurrency(position.valor_mercado)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className={`flex items-center justify-end space-x-1 ${
-                      (position.unrealizedPnL || position.pnl_no_realizado || 0) >= 0 ? "text-green-600" : "text-red-600"
+                      position.pnl_no_realizado >= 0 ? "text-green-600" : "text-red-600"
                     }`}>
-                      {(position.unrealizedPnL || position.pnl_no_realizado || 0) >= 0 ? (
+                      {position.pnl_no_realizado >= 0 ? (
                         <TrendingUp className="h-4 w-4" />
                       ) : (
                         <TrendingDown className="h-4 w-4" />
                       )}
                       <div>
                         <div className="font-medium">
-                          €{Math.abs(position.unrealizedPnL || position.pnl_no_realizado || 0).toLocaleString()}
+                          €{formatCurrency(Math.abs(position.pnl_no_realizado))}
                         </div>
                         <div className="text-xs">
-                          {(position.unrealizedPnLPercent || position.pnl_porcentual || 0) > 0 ? "+" : ""}
-                          {(position.unrealizedPnLPercent || position.pnl_porcentual || 0).toFixed(1)}%
+                          {position.pnl_porcentual > 0 ? "+" : ""}
+                          {position.pnl_porcentual.toFixed(1)}%
                         </div>
                       </div>
                     </div>

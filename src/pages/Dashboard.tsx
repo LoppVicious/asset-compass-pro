@@ -263,7 +263,7 @@ export default function Dashboard() {
 
         {/* Tabla de posiciones */}
         {positions.length > 0 && (
-          <PositionsTable positions={positions} />
+          <PositionsTable />
         )}
       </div>
     </AppLayout>
