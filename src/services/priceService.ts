@@ -32,16 +32,46 @@ export class PriceService {
       // 1. Obtener todas las posiciones actuales
       await this.loadCurrentPositions();
       
-      // 2. Establecer suscripción a cambios en posiciones
+      // 2. Cargar precios reales más recientes y sembrar el estado
+      await this.loadAndSeedRealPrices();
+      
+      // 3. Establecer suscripción a cambios en posiciones
       this.subscribeToPositionsChanges();
       
-      // 3. Iniciar suscripciones de precios para símbolos actuales
+      // 4. Iniciar suscripciones de precios para símbolos actuales
       this.updatePriceSubscriptions();
       
     } catch (error) {
       console.error('Error initializing PriceService:', error);
       const { setError } = usePortfolioStore.getState();
       setError('Error al inicializar el servicio de precios');
+    }
+  }
+
+  /**
+   * Carga precios reales desde Supabase y los establece como base en el store
+   */
+  private static async loadAndSeedRealPrices(): Promise<void> {
+    if (this.currentSymbols.size === 0) {
+      console.log('No symbols to load prices for');
+      return;
+    }
+
+    try {
+      const symbols = Array.from(this.currentSymbols);
+      const realPrices = await this.getLatestPrices(symbols);
+      const { updateAssetPrice } = usePortfolioStore.getState();
+
+      console.log('Loading real prices for symbols:', symbols);
+      
+      realPrices.forEach((priceData) => {
+        console.log(`Seeding real price for ${priceData.simbolo}: ${priceData.precio_cierre}`);
+        updateAssetPrice(priceData.simbolo, priceData.precio_cierre);
+      });
+
+      console.log(`Seeded ${realPrices.length} real prices from Supabase`);
+    } catch (error) {
+      console.error('Error loading real prices:', error);
     }
   }
 
@@ -182,25 +212,19 @@ export class PriceService {
    * Inicia simulación de precios para símbolos específicos
    */
   private static startPriceSimulationForSymbols(symbols: string[]): void {
-    const { updateAssetPrice } = usePortfolioStore.getState();
-    
-    // Precios base para simulación
-    const basePrices: Record<string, number> = {
-      'AAPL': 150.00,
-      'GOOGL': 2800.00,
-      'MSFT': 300.00,
-      'TSLA': 200.00,
-      'AMZN': 3200.00,
-      'BTC': 45000.00,
-      'ETH': 3000.00,
-      'ADA': 0.35,
-      'SOL': 85.00,
-    };
+    const { updateAssetPrice, assets } = usePortfolioStore.getState();
 
     symbols.forEach((symbol) => {
       // Limpiar intervalo previo si existe
       if (this.priceIntervals.has(symbol)) {
         clearInterval(this.priceIntervals.get(symbol)!);
+      }
+
+      // Obtener precio actual del store o usar fallback
+      const currentAsset = assets[symbol];
+      if (!currentAsset || !currentAsset.precio_actual) {
+        console.warn(`No real price found for ${symbol}, skipping simulation`);
+        return;
       }
 
       // Crear nuevo intervalo para este símbolo
@@ -211,22 +235,22 @@ export class PriceService {
           return;
         }
 
-        const basePrice = basePrices[symbol] || 100;
+        const { assets: latestAssets } = usePortfolioStore.getState();
+        const basePrice = latestAssets[symbol]?.precio_actual || currentAsset.precio_actual;
+        
         // Variación aleatoria de ±2%
         const variation = (Math.random() - 0.5) * 0.04;
         const newPrice = basePrice * (1 + variation);
         
-        console.log(`Updating price for ${symbol}: ${newPrice.toFixed(2)}`);
+        console.log(`Updating price for ${symbol}: ${newPrice.toFixed(2)} (base: ${basePrice})`);
         updateAssetPrice(symbol, Number(newPrice.toFixed(2)));
         
-        // Actualizar precio base para la próxima iteración
-        basePrices[symbol] = newPrice;
       }, 3000 + Math.random() * 2000); // Intervalo variable entre 3-5 segundos
 
       this.priceIntervals.set(symbol, interval);
     });
 
-    console.log(`Started price simulation for ${symbols.length} symbols`);
+    console.log(`Started price simulation for ${symbols.length} symbols based on real prices`);
   }
 
   /**
