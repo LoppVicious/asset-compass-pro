@@ -42,13 +42,15 @@ export function PositionsTable({}: PositionsTableProps) {
     });
   };
   
-  // Enrich positions with live prices
+  // Enrich positions with live prices from portfolioStore
   const enrichedPositions = useMemo(() => {
     return allPositions.map(position => {
       const asset = assets[position.simbolo];
+      // Use live price from portfolioStore, fallback to purchase price if not available
       const precioActual = asset?.precio_actual || position.precio_compra;
       const valorMercado = position.cantidad * precioActual;
-      const pnlNoRealizado = valorMercado - (position.cantidad * position.precio_compra);
+      // Calculate P/L as (Current Price - Average Price) × Quantity
+      const pnlNoRealizado = (precioActual - position.precio_compra) * position.cantidad;
       const pnlPorcentual = ((precioActual - position.precio_compra) / position.precio_compra) * 100;
       
       return {
