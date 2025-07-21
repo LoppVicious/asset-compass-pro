@@ -265,6 +265,20 @@ export default function Dashboard() {
         {positions.length > 0 && (
           <PositionsTable />
         )}
+
+        {/* Debug Panel - Precios en tiempo real */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <Card className="w-80 max-h-96 overflow-auto bg-background/95 backdrop-blur-sm border-2">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-sm mb-2 text-muted-foreground">
+                Precios en Tiempo Real (Debug)
+              </h3>
+              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-words">
+                {JSON.stringify(assets, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );
