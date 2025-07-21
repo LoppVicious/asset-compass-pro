@@ -20,6 +20,7 @@ import { useOperations } from "@/hooks/useOperations";
 import { usePortfolios } from "@/hooks/usePortfolios";
 import { usePositions } from "@/hooks/usePositions";
 import { usePortfolioStore } from "@/store/portfolioStore";
+import { PriceService } from "@/services/priceService";
 import { useEffect, useMemo } from "react";
 
 export default function Dashboard() {
@@ -105,6 +106,15 @@ export default function Dashboard() {
       });
     }, 2000);
   };
+
+  // Initialize PriceService when component mounts
+  useEffect(() => {
+    PriceService.initialize();
+    
+    return () => {
+      PriceService.cleanup();
+    };
+  }, []);
 
   // Auto-refresh when operations change
   useEffect(() => {

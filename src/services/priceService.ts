@@ -17,7 +17,236 @@ export interface LivePriceData {
 
 export class PriceService {
   private static realtimeChannel: any = null;
+  private static positionsChannel: any = null;
   private static isSubscribed = false;
+  private static currentSymbols: Set<string> = new Set();
+  private static priceIntervals: Map<string, NodeJS.Timeout> = new Map();
+
+  /**
+   * Inicializa el servicio conectándose a las posiciones y estableciendo suscripciones
+   */
+  static async initialize(): Promise<void> {
+    console.log('Initializing PriceService...');
+    
+    try {
+      // 1. Obtener todas las posiciones actuales
+      await this.loadCurrentPositions();
+      
+      // 2. Establecer suscripción a cambios en posiciones
+      this.subscribeToPositionsChanges();
+      
+      // 3. Iniciar suscripciones de precios para símbolos actuales
+      this.updatePriceSubscriptions();
+      
+    } catch (error) {
+      console.error('Error initializing PriceService:', error);
+      const { setError } = usePortfolioStore.getState();
+      setError('Error al inicializar el servicio de precios');
+    }
+  }
+
+  /**
+   * Carga las posiciones actuales y extrae los símbolos únicos
+   */
+  private static async loadCurrentPositions(): Promise<void> {
+    try {
+      const { data: positions, error } = await supabase
+        .from('positions')
+        .select('simbolo');
+
+      if (error) {
+        console.error('Error loading positions:', error);
+        return;
+      }
+
+      // Extraer símbolos únicos
+      const symbols = [...new Set(positions?.map(p => p.simbolo) || [])];
+      this.currentSymbols = new Set(symbols);
+      
+      console.log('Loaded current symbols:', Array.from(this.currentSymbols));
+    } catch (error) {
+      console.error('Error in loadCurrentPositions:', error);
+    }
+  }
+
+  /**
+   * Establece suscripción a cambios en la tabla de posiciones
+   */
+  private static subscribeToPositionsChanges(): void {
+    if (this.positionsChannel) {
+      supabase.removeChannel(this.positionsChannel);
+    }
+
+    this.positionsChannel = supabase
+      .channel('positions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'positions',
+        },
+        async (payload) => {
+          console.log('Positions changed:', payload);
+          
+          // Recargar posiciones y actualizar suscripciones
+          await this.loadCurrentPositions();
+          this.updatePriceSubscriptions();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Positions subscription status:', status);
+      });
+  }
+
+  /**
+   * Actualiza las suscripciones de precios basándose en los símbolos actuales
+   */
+  private static updatePriceSubscriptions(): void {
+    console.log('Updating price subscriptions for symbols:', Array.from(this.currentSymbols));
+    
+    // Limpiar suscripciones previas
+    this.clearPriceSubscriptions();
+    
+    if (this.currentSymbols.size === 0) {
+      console.log('No symbols to subscribe to');
+      return;
+    }
+
+    // Establecer nueva suscripción a precios históricos
+    this.subscribeToHistoricalPrices();
+    
+    // Iniciar simulación de precios para cada símbolo
+    this.startPriceSimulationForSymbols(Array.from(this.currentSymbols));
+  }
+
+  /**
+   * Suscribe a actualizaciones en la tabla historical_prices
+   */
+  private static subscribeToHistoricalPrices(): void {
+    const { updateAssetPrice, setLoading, setError } = usePortfolioStore.getState();
+    
+    this.realtimeChannel = supabase
+      .channel('live-prices')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'historical_prices',
+        },
+        (payload) => {
+          console.log('New price received:', payload);
+          const newPrice = payload.new as PriceData;
+          
+          // Solo actualizar si el símbolo está en nuestras posiciones actuales
+          if (this.currentSymbols.has(newPrice.simbolo)) {
+            updateAssetPrice(newPrice.simbolo, newPrice.precio_cierre);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'historical_prices',
+        },
+        (payload) => {
+          console.log('Price updated:', payload);
+          const updatedPrice = payload.new as PriceData;
+          
+          if (this.currentSymbols.has(updatedPrice.simbolo)) {
+            updateAssetPrice(updatedPrice.simbolo, updatedPrice.precio_cierre);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          this.isSubscribed = true;
+          setError(null);
+          setLoading(false);
+        } else if (status === 'CHANNEL_ERROR') {
+          setError('Error connecting to real-time price feed');
+          this.isSubscribed = false;
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+      });
+  }
+
+  /**
+   * Inicia simulación de precios para símbolos específicos
+   */
+  private static startPriceSimulationForSymbols(symbols: string[]): void {
+    const { updateAssetPrice } = usePortfolioStore.getState();
+    
+    // Precios base para simulación
+    const basePrices: Record<string, number> = {
+      'AAPL': 150.00,
+      'GOOGL': 2800.00,
+      'MSFT': 300.00,
+      'TSLA': 200.00,
+      'AMZN': 3200.00,
+      'BTC': 45000.00,
+      'ETH': 3000.00,
+      'ADA': 0.35,
+      'SOL': 85.00,
+    };
+
+    symbols.forEach((symbol) => {
+      // Limpiar intervalo previo si existe
+      if (this.priceIntervals.has(symbol)) {
+        clearInterval(this.priceIntervals.get(symbol)!);
+      }
+
+      // Crear nuevo intervalo para este símbolo
+      const interval = setInterval(() => {
+        if (!this.isSubscribed || !this.currentSymbols.has(symbol)) {
+          clearInterval(interval);
+          this.priceIntervals.delete(symbol);
+          return;
+        }
+
+        const basePrice = basePrices[symbol] || 100;
+        // Variación aleatoria de ±2%
+        const variation = (Math.random() - 0.5) * 0.04;
+        const newPrice = basePrice * (1 + variation);
+        
+        console.log(`Updating price for ${symbol}: ${newPrice.toFixed(2)}`);
+        updateAssetPrice(symbol, Number(newPrice.toFixed(2)));
+        
+        // Actualizar precio base para la próxima iteración
+        basePrices[symbol] = newPrice;
+      }, 3000 + Math.random() * 2000); // Intervalo variable entre 3-5 segundos
+
+      this.priceIntervals.set(symbol, interval);
+    });
+
+    console.log(`Started price simulation for ${symbols.length} symbols`);
+  }
+
+  /**
+   * Limpia todas las suscripciones de precios
+   */
+  private static clearPriceSubscriptions(): void {
+    // Limpiar canal de tiempo real
+    if (this.realtimeChannel) {
+      supabase.removeChannel(this.realtimeChannel);
+      this.realtimeChannel = null;
+    }
+
+    // Limpiar intervalos de simulación
+    this.priceIntervals.forEach((interval) => {
+      clearInterval(interval);
+    });
+    this.priceIntervals.clear();
+
+    this.isSubscribed = false;
+  }
 
   /**
    * Obtiene el precio histórico más reciente para un símbolo
@@ -139,152 +368,42 @@ export class PriceService {
   }
 
   /**
-   * Suscribe a actualizaciones en tiempo real de precios
+   * Método legacy - usar initialize() en su lugar
+   * @deprecated
    */
   static subscribeToLivePrices(symbols: string[] = []): void {
-    if (this.isSubscribed) {
-      console.log('Already subscribed to live prices');
-      return;
-    }
-
-    const { updateAssetPrice, setLoading, setError } = usePortfolioStore.getState();
-    
-    // Suscripción a cambios en la tabla historical_prices
-    this.realtimeChannel = supabase
-      .channel('live-prices')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'historical_prices',
-        },
-        (payload) => {
-          console.log('New price received:', payload);
-          const newPrice = payload.new as PriceData;
-          
-          // Actualizar el store con el nuevo precio
-          if (symbols.length === 0 || symbols.includes(newPrice.simbolo)) {
-            updateAssetPrice(newPrice.simbolo, newPrice.precio_cierre);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'historical_prices',
-        },
-        (payload) => {
-          console.log('Price updated:', payload);
-          const updatedPrice = payload.new as PriceData;
-          
-          if (symbols.length === 0 || symbols.includes(updatedPrice.simbolo)) {
-            updateAssetPrice(updatedPrice.simbolo, updatedPrice.precio_cierre);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-        
-        if (status === 'SUBSCRIBED') {
-          this.isSubscribed = true;
-          setError(null);
-          setLoading(false);
-        } else if (status === 'CHANNEL_ERROR') {
-          setError('Error connecting to real-time price feed');
-          this.isSubscribed = false;
-          setLoading(false);
-        } else {
-          setLoading(true);
-        }
-      });
-
-    // También conectar al Edge Function para datos simulados
-    this.connectToLiveFeed(symbols);
+    console.warn('subscribeToLivePrices is deprecated. Use initialize() instead.');
+    this.initialize();
   }
 
   /**
-   * Conecta al Edge Function para datos de mercado en tiempo real
-   */
-  private static async connectToLiveFeed(symbols: string[]): Promise<void> {
-    try {
-      const response = await fetch('/api/live-prices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ symbols }),
-      });
-
-      if (!response.ok) {
-        console.error('Error connecting to live price feed');
-        return;
-      }
-
-      // Simular actualizaciones periódicas
-      this.startPriceSimulation(symbols);
-    } catch (error) {
-      console.error('Error in connectToLiveFeed:', error);
-    }
-  }
-
-  /**
-   * Simula actualizaciones de precios para demostración
-   */
-  private static startPriceSimulation(symbols: string[]): void {
-    const { updateAssetPrice } = usePortfolioStore.getState();
-    
-    // Símbolos de ejemplo si no se proporcionan
-    const defaultSymbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN'];
-    const activeSymbols = symbols.length > 0 ? symbols : defaultSymbols;
-
-    // Simular precios iniciales
-    const basePrices: Record<string, number> = {
-      'AAPL': 150.00,
-      'GOOGL': 2800.00,
-      'MSFT': 300.00,
-      'TSLA': 200.00,
-      'AMZN': 3200.00,
-    };
-
-    // Actualizar precios cada 3 segundos
-    const interval = setInterval(() => {
-      if (!this.isSubscribed) {
-        clearInterval(interval);
-        return;
-      }
-
-      activeSymbols.forEach((symbol) => {
-        const basePrice = basePrices[symbol] || 100;
-        // Variación aleatoria de ±2%
-        const variation = (Math.random() - 0.5) * 0.04;
-        const newPrice = basePrice * (1 + variation);
-        
-        updateAssetPrice(symbol, Number(newPrice.toFixed(2)));
-        
-        // Actualizar precio base para la próxima iteración
-        basePrices[symbol] = newPrice;
-      });
-    }, 3000);
-
-    // Limpiar el intervalo después de 5 minutos para evitar consumo excesivo
-    setTimeout(() => {
-      clearInterval(interval);
-    }, 5 * 60 * 1000);
-  }
-
-  /**
-   * Desuscribirse de las actualizaciones en tiempo real
+   * Método legacy para compatibilidad - usar cleanup() en su lugar
+   * @deprecated
    */
   static unsubscribeFromLivePrices(): void {
-    if (this.realtimeChannel) {
-      supabase.removeChannel(this.realtimeChannel);
-      this.realtimeChannel = null;
-      this.isSubscribed = false;
-      console.log('Unsubscribed from live prices');
+    console.warn('unsubscribeFromLivePrices is deprecated. Use cleanup() instead.');
+    this.cleanup();
+  }
+
+  /**
+   * Desuscribirse de todas las actualizaciones
+   */
+  static cleanup(): void {
+    console.log('Cleaning up PriceService...');
+    
+    // Limpiar suscripciones de precios
+    this.clearPriceSubscriptions();
+    
+    // Limpiar suscripción a posiciones
+    if (this.positionsChannel) {
+      supabase.removeChannel(this.positionsChannel);
+      this.positionsChannel = null;
     }
+
+    // Limpiar estado
+    this.currentSymbols.clear();
+    
+    console.log('PriceService cleanup completed');
   }
 
   /**
@@ -292,5 +411,21 @@ export class PriceService {
    */
   static getSubscriptionStatus(): boolean {
     return this.isSubscribed;
+  }
+
+  /**
+   * Obtiene los símbolos actualmente suscritos
+   */
+  static getCurrentSymbols(): string[] {
+    return Array.from(this.currentSymbols);
+  }
+
+  /**
+   * Fuerza la actualización de suscripciones
+   */
+  static async forceUpdate(): Promise<void> {
+    console.log('Force updating PriceService...');
+    await this.loadCurrentPositions();
+    this.updatePriceSubscriptions();
   }
 }
