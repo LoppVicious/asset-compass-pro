@@ -26,7 +26,7 @@ export class PriceService {
    * Inicializa el servicio conectándose a las posiciones y estableciendo suscripciones
    */
   static async initialize(): Promise<void> {
-    console.log('Initializing PriceService...');
+    console.log('▶️ PriceService.initialize called');
     
     try {
       // 1. Obtener todas las posiciones actuales
@@ -60,6 +60,7 @@ export class PriceService {
     try {
       const symbols = Array.from(this.currentSymbols);
       const realPrices = await this.getLatestPrices(symbols);
+      console.log('🔎 Initial prices', realPrices);
       const { updateAssetPrice } = usePortfolioStore.getState();
 
       console.log('Loading real prices for symbols:', symbols);

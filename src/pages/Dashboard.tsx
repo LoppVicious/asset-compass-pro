@@ -107,14 +107,6 @@ export default function Dashboard() {
     }, 2000);
   };
 
-  // Initialize PriceService when component mounts
-  useEffect(() => {
-    PriceService.initialize();
-    
-    return () => {
-      PriceService.cleanup();
-    };
-  }, []);
 
   // Auto-refresh when operations change
   useEffect(() => {
